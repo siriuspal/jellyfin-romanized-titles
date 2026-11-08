@@ -21,6 +21,8 @@ jobs:
           dotnet-version: 10.0.x
       - name: Build
         run: |
+          # The checkout of main doesn't bring the tag's message, which is the changelog
+          git fetch --tags --force -q
           VERSION="${GITHUB_REF_NAME#v}.0"
           echo "VERSION=$VERSION" >> "$GITHUB_ENV"
           dotnet test -c Release
