@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Romanized Titles</title>
+</head>
+<body>
+    <div id="RomanizedTitlesConfigPage" data-role="page" class="page type-interior pluginConfigurationPage" data-require="emby-input,emby-button,emby-textarea">
+        <div data-role="content">
+            <div class="content-primary">
+                <form id="RomanizedTitlesConfigForm">
+                    <p>Films and series whose original title is in an Indian script get IMDb's original title in Roman script
+                        (Teen Kanya, not Three Daughters). The name is then locked; unlock it under Edit metadata to change it.</p>
+                    <div class="inputContainer">
+                        <label class="textareaLabel" for="ExcludedImdbIds">IMDb ids to leave alone</label>
+                        <textarea is="emby-textarea" id="ExcludedImdbIds" name="ExcludedImdbIds" rows="4"></textarea>
+                        <div class="fieldDescription">One per line, e.g. tt0476884.</div>
+                    </div>
+                    <div>
+                        <button is="emby-button" type="submit" class="raised button-submit block emby-button">
+                            <span>Save</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <script type="text/javascript">
+            var RomanizedTitlesConfig = {
+                pluginUniqueId: 'a506157a-9053-4134-9f42-745f120a1859'
+            };
+
+            document.querySelector('#RomanizedTitlesConfigPage')
+                .addEventListener('pageshow', function() {
+                    Dashboard.showLoadingMsg();
+                    ApiClient.getPluginConfiguration(RomanizedTitlesConfig.pluginUniqueId).then(function (config) {
+                        document.querySelector('#ExcludedImdbIds').value = config.ExcludedImdbIds || '';
+                        Dashboard.hideLoadingMsg();
+                    });
+                });
+
+            document.querySelector('#RomanizedTitlesConfigForm')
+                .addEventListener('submit', function(e) {
+                Dashboard.showLoadingMsg();
+                ApiClient.getPluginConfiguration(RomanizedTitlesConfig.pluginUniqueId).then(function (config) {
+                    config.ExcludedImdbIds = document.querySelector('#ExcludedImdbIds').value;
+                    ApiClient.updatePluginConfiguration(RomanizedTitlesConfig.pluginUniqueId, config).then(function (result) {
+                        Dashboard.processPluginConfigurationUpdateResult(result);
+                    });
+                });
+
+                e.preventDefault();
+                return false;
+            });
+        </script>
+    </div>
+</body>
+</html>

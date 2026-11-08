@@ -1,0 +1,30 @@
+name: Jellyfin watch
+
+# Opens an issue when Jellyfin releases a version newer than the one the plugin
+# is built against, as a reminder to rebuild and test it.
+on:
+  schedule:
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+
+permissions:
+  issues: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          BUILT=$(grep -oP 'Include="Jellyfin.Controller" Version="\K[^"]+' Jellyfin.Plugin.RomanizedTitles/*.csproj)
+          LATEST=$(curl -s https://api.nuget.org/v3-flatcontainer/jellyfin.controller/index.json \
+            | jq -r '[.versions[] | select(test("^[0-9]+\\.[0-9]+\\.[0-9]+$"))] | last')
+          echo "built against $BUILT, latest $LATEST"
+          if [ "$BUILT" != "$LATEST" ]; then
+            TITLE="Jellyfin $LATEST released (plugin built against $BUILT)"
+            if [ -z "$(gh issue list --state open --search "in:title \"$TITLE\"" --json number -q '.[].number')" ]; then
+              gh issue create --title "$TITLE" --body "Bump Jellyfin.Controller and Jellyfin.Model to $LATEST, set targetAbi in scripts/update_manifest.py, run the tests and tag a release."
+            fi
+          fi

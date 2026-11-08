@@ -1,0 +1,45 @@
+name: Release
+
+# Push a tag like v1.2.0 to build the plugin, attach it to a GitHub release
+# and add it to manifest.json, the repository URL Jellyfin installs from.
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.x
+      - name: Build
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}.0"
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          dotnet test -c Release
+          dotnet publish Jellyfin.Plugin.RomanizedTitles -c Release -o out \
+            -p:Version=$VERSION -p:AssemblyVersion=$VERSION -p:FileVersion=$VERSION
+          ZIP="romanized-titles_$VERSION.zip"
+          echo "ZIP=$ZIP" >> "$GITHUB_ENV"
+          (cd out && zip "../$ZIP" Jellyfin.Plugin.RomanizedTitles.dll)
+      - name: Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" "$ZIP" --title "$GITHUB_REF_NAME" --notes "$(git tag -l --format='%(contents)' "$GITHUB_REF_NAME")"
+      - name: Update manifest
+        run: |
+          python3 scripts/update_manifest.py "$VERSION" "$ZIP" \
+            "https://github.com/${GITHUB_REPOSITORY}/releases/download/${GITHUB_REF_NAME}/${ZIP}" \
+            "$(git tag -l --format='%(contents)' "$GITHUB_REF_NAME")"
+          git config user.name github-actions
+          git config user.email github-actions@users.noreply.github.com
+          git add manifest.json
+          git commit -m "Add $VERSION to manifest"
+          git push origin main

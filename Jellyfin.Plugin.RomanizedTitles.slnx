@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="Jellyfin.Plugin.RomanizedTitles.Tests/Jellyfin.Plugin.RomanizedTitles.Tests.csproj" />
+  <Project Path="Jellyfin.Plugin.RomanizedTitles/Jellyfin.Plugin.RomanizedTitles.csproj" />
+</Solution>
